@@ -1,150 +1,97 @@
-FusionPBX Pilot Python Library
-==============================
+# FusionPBX Pilot
 
-[Gnovit](https://www.gnovit.com)
+Python library that automates [FusionPBX](https://www.fusionpbx.com) administration. FusionPBX has no complete REST API, so this library drives its web UI with Selenium WebDriver and exposes domains and extensions as plain Python objects (Page Object pattern): reading or assigning an attribute performs the corresponding action in the UI.
 
-email: <fusionpbx-pilot@gnovit.com>
+It is the engine behind [fusionpbx_pilot_api](https://github.com/marujofln/fusionpbx_pilot_api), a REST API for multi-tenant PBX provisioning. Published on [PyPI](https://pypi.org/project/fusionpbx-pilot/), licensed under GPL v3.
 
-This python library is intended to automate [FusionPBX](https://www.fusionpbx.com) administrative tasks.
-This library is based on Selenium WebDriver and abstracts FusionPBX objects as python objects.
-Should be used in an API to manage FusionPBX.
-This is licensed under the terms of the GNU GPL v3 license.
+**Stack:** Python 3.10+, Selenium 4, pytest.
 
-Examples
---------
+## Features
 
-Install the library:
+- Log in to FusionPBX and list, create, rename and delete **domains** (tenants)
+- List, create, rename and delete **extensions** in a domain
+- Read or set an extension's SIP password, voicemail status and voicemail e-mail
+- Works with a local browser or a remote Selenium Grid
+- Sample scripts in [`samples/`](samples/): customer report, bulk voicemail from CSV, bulk domain cleanup
 
-``` bash
+## Installation
+
+From PyPI:
+
+```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install fusionpbx-pilot
+pip install fusionpbx-pilot webdriver_manager
 ```
 
-Install webdriver_manager to automatically manage the browser driver:
+From source:
 
-``` bash
-pip install webdriver_manager
-
+```bash
+git clone https://github.com/marujofln/fusionpbx-pilot.git
+cd fusionpbx-pilot
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e . webdriver_manager
 ```
 
-Install GeckoDriver and instantiate the FusionPBX class:
+Firefox must be installed; `webdriver_manager` downloads the matching GeckoDriver.
 
-``` python
+## Quick start
+
+```python
 from selenium import webdriver
 from selenium.webdriver.firefox.service import Service as FirefoxService
 from webdriver_manager.firefox import GeckoDriverManager
-from selenium.webdriver.firefox.service import Service as FirefoxService
 from fusionpbx_pilot.page_objects import FusionPBX
 
+driver = webdriver.Firefox(service=FirefoxService(GeckoDriverManager().install()))
+f = FusionPBX(driver, 'https://pbx.example.com', '<login_user>', '<login_password>')
 
-service = FirefoxService(GeckoDriverManager().install())
-driver = webdriver.Firefox(service=service)
+d = f.domain('tenant.example.com')               # raises DomainNotFound if missing
+d = f.domain('new.example.com', create=True)     # creates the domain
 
-f = FusionPBX(driver, '<https://addr>', '<login_user>', '<login_password>')
+e = d.extension('1001')                          # created if it does not exist
+e.password = 'S3cure-Pass'
+e.voicemail_enabled = True
+e.voicemail_mail_to = 'user@example.com'
+print(d.extensions.list())
 ```
 
-- Set domain object: If domain no exist, raises DomainNotFound exception.
+## API
 
-``` python
-d = f.domain('<domain_name>')
+### Domains
+
+| Operation | Code |
+|---|---|
+| List domains | `f.domains.list()` |
+| Select a domain | `d = f.domain('<name>')` |
+| Create a domain | `d = f.domain('<name>', create=True)` |
+| Rename | `d.name = '<new_name>'` |
+| Get UUID | `d.uuid` |
+| Delete (needs the domain delete permission) | `del d.name` |
+
+### Extensions
+
+| Operation | Code |
+|---|---|
+| List extensions | `d.extensions.list()` |
+| Select or create | `e = d.extension('<number>')` |
+| Rename | `e.name = '<new_number>'` |
+| SIP password | `e.password` / `e.password = '<new>'` |
+| Voicemail enabled | `e.voicemail_enabled` / `e.voicemail_enabled = True` |
+| Voicemail e-mail | `e.voicemail_mail_to` / `e.voicemail_mail_to = '<email>'` |
+| Delete | `del d.extension.name` |
+
+## Running the tests
+
+The tests run against a real FusionPBX instance (they create and delete domains and extensions, so use a test server):
+
+```bash
+cp tests/.env_sample tests/.env   # set PYTEST_URL, PYTEST_USERNAME, PYTEST_PASSWORD
+pip install pytest pytest-dependency python-dotenv faker
+pytest tests/
 ```
 
-- To create a new domain, use the following:
+## Contributing
 
-``` python
-d = f.domain('<domain_name>', create=True)
-```
-
-Returns a new domain object.
-
-Domain manipulate
---------------------
-
-- Domain rename:
-
-``` python
-d.name = '<new_domain_name>'
-```
-
-- Domain get uuid:
-
-``` python
-d.uuid
-```
-
-- Domain delete:
-  *You must to add domain delete permission to the user used to login to FusionPBX.*
-  
-``` python
-del f.domain.name
-```
-
-Extensions manipulate
---------------------
-  
-- List all extensions of a domain:
-
-``` python
-d.extensions.list()
-```
-
-- Set or create an extension object:
-  
-``` python
-e = d.extension('<extension_name>')
-```
-
-Generally extension name is a number...
-
-If extension no exist, the lib will create it.
-
-- Rename extension object
-
-``` python
-e.name = '<new_extension_name>'
-```
-
-- Get or set password
-
-``` python
-e.password
-```
-
-Returns password
-
-``` python
-e.password = '<new_password>'
-```
-
-Set the password
-
-- Get or set voicemail enabled:
-
-``` python
-e.voicemail_enabled
-```
-
-- Get or set voicemail_mail_to:
-
-``` python
-e.voicemail_mail_to
-```
-
-- Get UUID:
-
-``` python
-e.uuid
-```
-
-- Delete extension
-
-``` python
-del d.extension.name
-```
-
-Contributions
--------------
-
-Contribuitions are welcome.
-Please fork the project and send a pull request.
+Contributions are welcome: fork the project and open a pull request.
