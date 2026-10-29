@@ -1,5 +1,5 @@
 [project]
-authors = [{ name = "Marcelo Araujo", email = "marcelo@gnovit.com" }]
+authors = [{ name = "Marcelo Araujo", email = "devmarujo@gmail.com" }]
 name = "fusionpbx_pilot"
 version = "0.2.0"
 description = "Python client LIB for FusionPBX"
