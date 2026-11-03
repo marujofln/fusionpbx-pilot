@@ -14,7 +14,11 @@ class Domains(ABC):
     def list(self):
         self.page.open(app_path)
         items = {
-            'enabled': (By.CSS_SELECTOR, 'td button[title="Toggle"] span'),
+            # FusionPBX may render the title localized (pt-br: "Alterar")
+            'enabled': (
+                By.CSS_SELECTOR,
+                'td button[title="Toggle"] span, td button[title="Alterar"] span',
+            ),
             'description': (
                 By.CSS_SELECTOR,
                 'td[class="description overflow hide-sm-dn"]',
